@@ -12,7 +12,7 @@ class Plugin(object):
     alt_implements = {}
     req_root       = False
     depends        = []
-    version        = None
+    version        = ""
     has_opts       = False
 
     def __init__(self):
