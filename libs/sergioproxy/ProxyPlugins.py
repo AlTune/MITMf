@@ -1,4 +1,4 @@
-# Copyright (c) 2010-2011 Ben Schmidt
+# Copyright (c) 2010-2011 Ben Schmidt, Marcello Salvati
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License as
@@ -41,31 +41,48 @@ class ProxyPlugins:
 
     def setPlugins(self,plugins):
         '''Set the plugins in use'''
+        
         self.plist = []
    
         #build a lookup list
         #need to clean up in future
         self.pmthds = {}
+        
+        self.alt_pmthds = {}
+
         for p in plugins:
             self.addPlugin(p)
 
     def addPlugin(self,p):
         '''Load a plugin'''
+
         self.plist.append(p)
+        
         for mthd in p.implements:
             try:
                 self.pmthds[mthd].append(getattr(p,mthd))
             except KeyError:
                 self.pmthds[mthd] = [getattr(p,mthd)]
 
+        for mthd in p.alt_implements:
+            try:
+                self.alt_pmthds[mthd].append(getattr(p, p.alt_implements[mthd]))
+            except KeyError:
+                self.alt_pmthds[mthd] = [getattr(p, p.alt_implements[mthd])]
+
     def removePlugin(self,p):
         '''Unload a plugin'''
         self.plist.remove(p)
+        
         for mthd in p.implements:
             self.pmthds[mthd].remove(p)
 
+        for mthd in p.alt_implements:
+            self.alt_pmthds[mthd].remove(p)
+
     def hook(self):
         '''Magic to hook various function calls in sslstrip'''
+
         #gets the function name and args of our caller
         frame = sys._getframe(1)
         fname = frame.f_code.co_name
@@ -83,6 +100,10 @@ class ProxyPlugins:
         #calls any plugin that has this hook
         try:
             for f in self.pmthds[fname]:
+                a = f(**args)
+                if a != None: args = a
+
+            for f in self.alt_pmthds[fname]:
                 a = f(**args)
                 if a != None: args = a
         except KeyError:
